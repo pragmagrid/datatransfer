@@ -105,7 +105,16 @@ Collected local data transfer times (from out):
 
 #### Add Route
 
-TBA
+```bash
+ip route add default via 67.58.50.193
+ip route show
+```
+
+Check connectivity
+```bash
+traceroute www.ucsd.edu
+tcpdump -i bond0 host fiji.rocksclusters.org
+```
 
 #### Setup FDT
 
