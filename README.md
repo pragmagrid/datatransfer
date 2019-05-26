@@ -6,10 +6,13 @@ DTN and data transfer
 1. [Copy data from USB](#copy-data-from-usb)
 1. [Add firewall](#add-firewall)
 1. [Add route](#add-route)
-1. [Setup FDT](#setup-fdt) <br>
+1. [Setup FDT](#setup-fdt) 
+   1. [Prerequisites](#prerequisites)
+   1. [Install FDT](#install-fdt)
+   1. [Test setup](#test-setup)
 
 
-#### Mount Salk USB drive
+### Mount Salk USB drive
 
 1. Create zfs slice for storing the data
    ```bash
@@ -96,7 +99,7 @@ DTN and data transfer
       File_and_preprocessing_info  Sample_2  Seagate   Start_Here_Mac.app    Warranty.pdf
       ```
       
-#### Copy data from USB
+### Copy data from USB
 
 Once the USB dive is mounted, copy data from the USB disk using its original layout .
 The Disk contents for one day sampling :
@@ -130,7 +133,7 @@ Collected local data transfer times (from out):
 | End | Fri Jun 22 01:15       |          Sat Jun 23 00:02:40 AKDT 2018 |
 
 
-#### Add firewall
+### Add firewall
 
 on frontend  create a script `/root/code/add-pragmadata-firewall` with the wollowing contents:
 ```bash
@@ -154,7 +157,7 @@ on frontend  create a script `/root/code/add-pragmadata-firewall` with the wollo
 
 Execute the script to enable the new rules for pragmadata-1-1.
 
-#### Add Route
+### Add Route
 
 On pragmadata-1-1 do
 
@@ -169,11 +172,13 @@ traceroute www.ucsd.edu
 tcpdump -i bond0 host fiji.rocksclusters.org
 ```
 
-#### Setup FDT
+### Setup FDT
 
 On pragmadata-1-1 do
 
-1. Install latest available (for the OS ) java
+#### Prerequisites
+   
+   Install latest available (for the OS ) java
 
    ```txt
    # yum install java-1.8.0-openjdk.x86_64
@@ -185,12 +190,11 @@ On pragmadata-1-1 do
    OpenJDK 64-Bit Server VM (build 25.161-b14, mixed mode)
    ```
 
-1. Install FDT
+#### Install FDT
 
    Previously tried FDT version 0.24.  All available FDT  distributions are at the [FDT releases page][fdtrel].
-   In 2018 tried to use FDT v. 0.24. 
+   In 2018 tried to use FDT v. 0.24. As of 2019, download latest availalbe 0.26.1
    
-   As of 2019, download latest availalbe 0.26.1
    ```bash
    cd /pool1/pragma/salk/downloads
    wget https://github.com/fast-data-transfer/fdt/releases/download/0.26.1/fdt.jar
@@ -198,10 +202,59 @@ On pragmadata-1-1 do
    java -jar fdt.jar -version
    2019-05-26 13:20:14 INFO lia.util.net.copy.FDT printVersion FDT 0.26.1-201708081830
    2019-05-26 13:20:14 INFO lia.util.net.copy.FDT printVersion Contact: support-fdt@monalisa.cern.ch
+   mkdir /opt/fdt
+   cp fdt.jar /opt/fdt
    ```
    
+#### Test setup
    
+Use the same version of FDT on server and client.
+
+1. On pragmadata-1-1 start FDT server. Options:
+   - `-S` disables the standalone mode, when specified the FDT server will stop after the last client finishes. 
+   - `-noupdates` disables the  new releases updates check
    
+   ```bash
+   java -jar /opt/fdt/fdt.jar  -p 5000 -S
+   ```
+   
+   Trimmed output:
+   ```txt
+   FDT [ 0.26.1-201708081830 ] STARTED ... 
+
+   2019-05-26 14:44:23 INFO lia.util.net.common.Config <init> Using lia.util.net.copy.PosixFSFileChannelProviderFactory as FileChannelProviderFactory
+   2019-05-26 14:44:23 INFO lia.util.net.common.Config <init> FDT started in server mode
+   2019-05-26 14:44:23 INFO lia.util.net.copy.FDT main FDT uses *blocking* I/O mode.
+   READY
+   2019-05-26 14:44:23 INFO lia.util.net.copy.FDTServer doWork FDTServer start listening on port: 5000
+   ```
+
+1. On the client pc-163 start  the client. Options:
+   - `-c` means connect to the specified host. If this parameter is missing the FDT will become server
+   - `-v` verbose
+
+   ```bash
+   java -jar ./fdt.jar -v -c 67.58.50.197 -p 5000  -d /pool1/pragma/salk/downloads file2transfer 
+   ```
+   
+   Trimmed output:
+   ```txt
+   May 26, 2019 3:47:32 PM lia.util.net.copy.FDT initLogging
+   INFO:  LogLevel: FINE
+   May 26, 2019 3:47:32 PM lia.util.net.common.Utils initLocalProps
+   INFO: Using local properties file: /root/.fdt/fdt.properties
+   May 26, 2019 3:47:32 PM lia.util.net.common.Utils initLocalProps
+   INFO: No local properties defined
+   May 26, 2019 3:47:32 PM lia.util.net.copy.FDT main
+   INFO: 
+
+   FDT [ 0.26.1-201708081830 ] STARTED ... 
+   ...
+   May 26, 2019 3:47:40 PM lia.util.net.copy.FDT doWork
+   INFO: 
+    [ Sun May 26 15:47:40 PDT 2019 ]  FDT Session finished OK.
+   ```
+
 
 
 
