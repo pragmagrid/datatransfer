@@ -4,6 +4,7 @@ DTN and data transfer
 **Table of Contents:**
 1. [Mount Salk USB drive](#mount-salk-usb-drive)
 1. [Copy data from USB](#copy-data-from-usb)
+1. [Add firewall](#add-firewall)
 1. [Add route](#add-route)
 1. [Setup FDT](#setup-fdt) <br>
 
@@ -37,37 +38,64 @@ DTN and data transfer
        mkdir /media/usb-drive
        ```
  
-    1. Install fuse and ntfs-3g RPMs needed for mounting USB drive (partitioned on windows)
+   1. Install fuse and ntfs-3g RPMs needed for mounting USB drive (partitioned on windows)
 
-       Install yum-utils (to get yumdownloader) and fuse form local repo and ntfs-3g from epel.
-       ```bash
-       cd /pool1/pragma/salk/
-       mkdir downloads
-       cd downloads/
+      Install yum-utils (to get yumdownloader) and fuse form local repo and ntfs-3g from epel.
+      ```bash
+      cd /pool1/pragma/salk/
+      mkdir downloads
+      cd downloads/
 
-       yum list yum-utils
-       install yum-utils
+      yum list yum-utils
+      install yum-utils
    
-       yum list fuse
-       yum install fuse
+      yum list fuse
+      yum install fuse
    
-       yum --enablerepo=epel list ntfs-3g
-       yumdownloader --resolve --enablerepo=epel ntfs-3g
-       rpm -i ntfs-3g-2017.3.23-6.el7.x86_64.rpm
-       yum list ntfs-3g
+      yum --enablerepo=epel list ntfs-3g
+      yumdownloader --resolve --enablerepo=epel ntfs-3g
+      rpm -i ntfs-3g-2017.3.23-6.el7.x86_64.rpm
+      yum list ntfs-3g
        ```
    
-    1. Mount USB drive
+   1. Load fuse module
 
-       ```bash
-       modprobe fuse
-       lsmod | grep fuse
+      First, there should be no fuse module, as the fuse RPM was just installed. After modprobe command
+      fuse is loaded:
+      ```txt
+      # lsmod | grep fuse
+      # modprobe fuse
+      # lsmod | grep fuse
+      fuse                   91874  1 
+      ```
+       
+   1. Mount USB drive
 
-       fdisk -l
-       ls /media/usb-drive/
-       mount -t ntfs-3g /dev/sds2 /media/usb-drive/
-       ls /media/usb-drive/
-       ```
+      Check what drive systems recognizes as USB
+      ```
+      fdisk -l | grep Disk | grep dev | grep -v fdisk
+      Disk /dev/sda: 120.0 GB, 120034123776 bytes, 234441648 sectors
+      Disk /dev/sdb: 120.0 GB, 120034123776 bytes, 234441648 sectors
+      Disk /dev/md127: 2147 MB, 2147483648 bytes, 4194304 sectors
+      Disk /dev/md126: 68.7 GB, 68719476736 bytes, 134217728 sectors
+      Disk /dev/md125: 2147 MB, 2147483648 bytes, 4194304 sectors
+      Disk /dev/sde: 10000.8 GB, 10000831348736 bytes, 19532873728 sectors
+      Disk /dev/sdf: 10000.8 GB, 10000831348736 bytes, 19532873728 sectors
+      ...
+      Disk /dev/sdp: 10000.8 GB, 10000831348736 bytes, 19532873728 sectors
+      Disk /dev/md124: 46.9 GB, 46912241664 bytes, 91625472 sectors
+      Disk /dev/sds: 8001.6 GB, 8001563221504 bytes, 15628053167 sectors
+      ```
+      
+      From the output above it is /dev/sds. Mount via:
+      ```txt
+      # ls /media/usb-drive/
+      # mount -t ntfs-3g /dev/sds2 /media/usb-drive/
+      # ls /media/usb-drive/
+      Autorun.inf                  Sample_1  Sample_3  SeagateExpansion.ico  Start_Here_Win.exe
+      File_and_preprocessing_info  Sample_2  Seagate   Start_Here_Mac.app    Warranty.pdf
+      ```
+      
 #### Copy data from USB
 
 Once the USB dive is mounted, copy data from the USB disk using its original layout .
@@ -102,8 +130,33 @@ Collected local data transfer times (from out):
 | End | Fri Jun 22 01:15       |          Sat Jun 23 00:02:40 AKDT 2018 |
 
 
+#### Add firewall
+
+on frontend  create a script `/root/code/add-pragmadata-firewall` with the wollowing contents:
+```bash
+#!/bin/bash
+
+# add rules on frontend for the pragmadata-1-1 host:
+# - acceppt conencitons for ports 5000-5020 
+# - acceppt conencitons for ssh
+# - acceppt conencitons for tcp on established on host for prototocls (initiated on the host, like wget)
+# - reject all other connecitons 
+
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=all protocol=tcp action=ACCEPT chain=INPUT flags="--dport 5000:5020 -m state --state NEW,RELATED" rulename=A20-OPTISTORAGE-TCP
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=all protocol=udp action=ACCEPT chain=INPUT flags="--dport 5000:5020 -m state --state NEW,RELATED" rulename=A20-OPTISTORAGE-UDP
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=ssh protocol=tcp action=ACCEPT chain=INPUT rulename=A21-OPTISTORAGE-SSH
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=all protocol=tcp action=ACCEPT chain=INPUT flags="-m state --state RELATED,ESTABLISHED" rulename=A30-RELATED-OPTISTORAGE
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=0:65535 protocol=tcp action=DROP chain=INPUT rulename=R100-OPTISTORAGE-DROPALL-TCP
+/opt/rocks/bin/rocks add firewall host=pragmadata-1-1 network=optistorage service=0:65535 protocol=udp action=DROP chain=INPUT rulename=R100-OPTISTORAGE-DROPALL-UDP
+
+/opt/rocks/bin/rocks sync host firewall pragmadata-1-1
+```
+
+Execute the script to enable the new rules for pragmadata-1-1.
 
 #### Add Route
+
+On pragmadata-1-1 do
 
 ```bash
 ip route add default via 67.58.50.193
@@ -118,6 +171,38 @@ tcpdump -i bond0 host fiji.rocksclusters.org
 
 #### Setup FDT
 
-TBA
+On pragmadata-1-1 do
+
+1. Install latest available (for the OS ) java
+
+   ```txt
+   # yum install java-1.8.0-openjdk.x86_64
+   # which java
+   /usr/bin/java
+   # java -version
+   openjdk version "1.8.0_161"
+   OpenJDK Runtime Environment (build 1.8.0_161-b14)
+   OpenJDK 64-Bit Server VM (build 25.161-b14, mixed mode)
+   ```
+
+1. Install FDT
+
+   Previously tried FDT version 0.24.  All available FDT  distributions are at the [FDT releases page][fdtrel].
+   In 2018 tried to use FDT v. 0.24. 
+   
+   As of 2019, download latest availalbe 0.26.1
+   ```bash
+   cd /pool1/pragma/salk/downloads
+   wget https://github.com/fast-data-transfer/fdt/releases/download/0.26.1/fdt.jar
+   
+   java -jar fdt.jar -version
+   2019-05-26 13:20:14 INFO lia.util.net.copy.FDT printVersion FDT 0.26.1-201708081830
+   2019-05-26 13:20:14 INFO lia.util.net.copy.FDT printVersion Contact: support-fdt@monalisa.cern.ch
+   ```
+   
+   
+   
 
 
+
+[fdtrel]: https://github.com/fast-data-transfer/fdt/releases/
