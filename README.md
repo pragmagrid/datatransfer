@@ -2,14 +2,13 @@
 DTN and data transfer
 
 **Table of Contents:**
-1. [Mount Salk USB drive](#usb-mount)
-1. [Copy data from USB to zpool](#cp-data)
+1. [Mount Salk USB drive](#mount-salk-usb-drive)
+1. [Copy data from USB](#copy-data-from-usb)
 1. [Add route](#add-route)
 1. [Setup FDT](#setup-fdt) <br>
 
 
 #### 1. Mount Salk USB drive
-{: id="usb-mount"}
 
 1. Create zfs slice for storing the data
    ```bash
@@ -69,8 +68,7 @@ DTN and data transfer
        mount -t ntfs-3g /dev/sds2 /media/usb-drive/
        ls /media/usb-drive/
        ```
-#### 2. Copy data from USB to zpool
-{: id="cp-data"}
+#### 2. Copy data from USB
 
 Once the USB dive is mounted, copy data from the USB disk using its original layout .
 The Disk contents for one day sampling :
@@ -106,12 +104,10 @@ Collected local data transfer times (from out):
 
 
 #### 3. Add Route
-{: id="add-route"}
 
 TBA
 
 #### 4. Setup FDT
-{: id="setup-fdt"}
 
 TBA
 
