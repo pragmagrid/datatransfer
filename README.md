@@ -8,7 +8,7 @@ DTN and data transfer
 1. [Setup FDT](#setup-fdt) <br>
 
 
-#### 1. Mount Salk USB drive
+#### Mount Salk USB drive
 
 1. Create zfs slice for storing the data
    ```bash
@@ -68,7 +68,7 @@ DTN and data transfer
        mount -t ntfs-3g /dev/sds2 /media/usb-drive/
        ls /media/usb-drive/
        ```
-#### 2. Copy data from USB
+#### Copy data from USB
 
 Once the USB dive is mounted, copy data from the USB disk using its original layout .
 The Disk contents for one day sampling :
@@ -103,11 +103,11 @@ Collected local data transfer times (from out):
 
 
 
-#### 3. Add Route
+#### Add Route
 
 TBA
 
-#### 4. Setup FDT
+#### Setup FDT
 
 TBA
 
