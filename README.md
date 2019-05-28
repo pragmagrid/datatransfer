@@ -166,6 +166,11 @@ ip route add default via 67.58.50.193
 ip route show
 ```
 
+The IP above is a gateway for the optistorage network. See network settings with
+```bash
+rocks list network
+```
+
 Check connectivity
 ```bash
 traceroute www.ucsd.edu
